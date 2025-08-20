@@ -1,10 +1,22 @@
+Here’s a cleaned, README-ready version—short, scannable, and non-redundant.
 
-# install.packages("devtools")
+---
+
+# likertSim — Quick Start
+
+## Install
+
+```r
+install.packages("devtools")           # if needed
 devtools::install_github("tm012/likertSim")
-
 library(likertSim)
+```
 
-# minimal example (first column must be coder_id)
+## Minimal example
+
+```r
+# First column = coder_id; remaining columns = Likert items
+set.seed(1)
 df_real <- data.frame(
   coder_id = paste0("r", 1:50),
   A = sample(1:5, 50, TRUE),
@@ -16,54 +28,108 @@ out <- simulate_and_compare(
   df_real,
   K_min = 1, K_max = 5,
   N_sim = 200,
-  noise_factor = 1.2,
-  bias = 0.2,
-  corr_alpha = 0.3,
-  mode = "threshold"
+  noise_factor = 1.20,  # +20% SD
+  bias         = 0.20,  # ~+0.2 category (lenient)
+  corr_alpha   = 0.30,  # 30% correlation shrink
+  mode         = "threshold"
 )
 
 head(out$comparison)
 out$warnings
+```
+
+---
+
+## Stress knobs (tiers)
+
+Use these presets to dial realism or “stress test” reliability.
+
+| Tier     | `noise_factor` | `bias` | `corr_alpha` | Rule of thumb                                        |
+| -------- | -------------: | -----: | -----------: | ---------------------------------------------------- |
+| Baseline |           1.00 |   0.00 |         0.00 | Mimics real raters.                                  |
+| Mild     |           1.05 |   0.10 |         0.10 | SD +5%; \~+0.1 category; slight structure shrink.    |
+| Moderate |           1.15 |   0.25 |         0.25 | SD +15%; \~+¼ category; noticeable reliability drop. |
+| Strong   |           1.30 |   0.40 |         0.50 | SD +30%; \~+0.4 category; correlations halved.       |
+| Extreme  |           1.60 |   0.60 |         0.80 | SD +60%; \~+0.6 category; structure near collapse.   |
 
 
-| Tier         | noise\_factor | bias | corr\_alpha | What it means in practice (5-point scale)                                                                               |
-| ------------ | ------------- | ---- | ----------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Baseline** | 1.00          | 0.00 | 0.00        | Raters use scale as in real data; no change.                                                                            |
-| **Mild**     | 1.05          | 0.10 | 0.10        | Slightly more scattered (SD +5%), \~⅒ of a category higher; inter-item r shrinks 10%.                                   |
-| **Moderate** | 1.15          | 0.25 | 0.25        | SD +15% (variance +32%), about ¼ category leniency; correlations ×0.75 (α/ICC start to drop).                           |
-| **Strong**   | 1.30          | 0.40 | 0.50        | SD +30% (variance +69%), almost ½ category shift up; correlations halved (α/ICC fall substantially).                    |
-| **Extreme**  | 1.60          | 0.60 | 0.80        | Very noisy (SD +60%, variance +156%), \~⅗ category bias; correlations cut to 20% of original (structure near collapse). |
+
+---
+
+## Key arguments (quick reference)
 
 
-| Tier         | noise\_factor | bias | corr\_alpha | What it means in practice (7-point scale)                                                                                 |
-| ------------ | ------------- | ---- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Baseline** | 1.00          | 0.00 | 0.00        | Pure mimic of real raters.                                                                                                |
-| **Mild**     | 1.05          | 0.10 | 0.10        | SD +5%; \~⅒ category shift (hardly noticeable); correlations ×0.9.                                                        |
-| **Moderate** | 1.15          | 0.25 | 0.25        | SD +15% (variance +32%); about ¼ category bias (detectable leniency/severity); correlations ×0.75.                        |
-| **Strong**   | 1.30          | 0.40 | 0.50        | SD +30% (variance +69%); \~0.4 category shift (between “Agree” and “Strongly Agree”); correlations halved.                |
-| **Extreme**  | 1.60          | 0.60 | 0.80        | SD +60% (variance +156%); \~0.6 category shift; inter-item correlations reduced to 20% (construct reliability collapses). |
+
+df_real (data.frame / matrix, required)
+Your real Likert dataset. First column should be an ID; remaining columns are items. Used to learn item means/SDs, thresholds, and inter-item correlations.
+
+K_min (integer, required)
+Lowest Likert category in your scale (usually 1).
+
+K_max (integer, required)
+Highest Likert category (e.g., 5 or 7). All simulated scores are rounded and clipped to [K_min, K_max].
+
+N_sim (integer, default = nrow(df_real))
+Number of simulated raters/rows to generate per condition (default & stress).
+
+noise_factor (numeric ≥ 0, default = 1.0)
+Multiplies item SDs before discretizing.
+
+1.0 = same dispersion as real data
+
+>1.0 = noisier raters (e.g., 1.15 → SD +15%)
+
+0.8–1.0 = very consistent raters
+
+bias (numeric, default = 0.0)
+Constant shift in category units applied to latent scores before rounding.
+
++ = lenient (pushes up), − = severe (pushes down)
+
+Typical safe range: about −0.6 … +0.6 on 5–7 point scales
+
+corr_alpha (numeric in [0,1], default = 0.0)
+Correlation “shrink” toward independence. Implemented as
+R' = (1 − corr_alpha)·R + corr_alpha·I.
+
+0.0 = keep real inter-item structure
+
+0.25 ≈ reduce off-diagonals by 25%
+
+1.0 = wipe structure (identity)
+
+seed_default (integer, default = 123)
+RNG seed for the baseline simulation (reproducibility).
+
+seed_stress (integer, default = 456)
+RNG seed for the stress simulation.
+
+id_prefix_default (string, default = "sim")
+Prefix for generated IDs in the baseline dataset (e.g., sim_0001).
+
+id_prefix_stress (string, default = "stress")
+Prefix for generated IDs in the stress dataset.
+
+mode (string, one of c("threshold","meansd"))
+Chooses the simulation engine:
+
+"threshold": fit polychoric (or Pearson fallback) correlation; derive item thresholds from df_real; simulate latent multivariate normals; cut by thresholds to Likert. Best when you have moderate N and ordinal items.
+
+"meansd": simpler Gaussian + rounding using item means/SDs and a (shrunken) Pearson R. Useful for very small N or when thresholds are unstable.
+
+auto_small_switch (logical, default = TRUE)
+If TRUE, automatically switch mode to "meansd" when sample size is small (see small_n_cutoff) to avoid unreliable threshold/ polychoric estimates.
+
+small_n_cutoff (integer, default = 15)
+Threshold for “small N” logic. If nrow(df_real) < small_n_cutoff and auto_small_switch = TRUE, use "meansd" internally.
+
+threshold_strategy (string, one of c("empirical","equal"))
+How to set category cut-points when mode = "threshold":
+
+"empirical": use observed cumulative proportions per item (adds a small smoothing) → mirrors real response distributions.
+
+"equal": use equally spaced thresholds on the latent normal → idealized balanced categories.
 
 
-noise_factor (scales SD) → must be ≥ 0.
 
-Typical use: ≥ 1.0 to add noise (1.05, 1.15, 1.30…).
 
-You may use 0.8–1.0 to model less noisy/very consistent raters.
-
-Never negative (a negative SD multiplier is meaningless).
-
-bias (in “category units”) → can be positive or negative.
-
-+ bias = lenient (pushes scores up).
-
-– bias = severe (pushes scores down).
-
-Safe range: ≈ −0.6 to +0.6 (bigger shifts risk floor/ceiling on 5–7 pt scales).
-
-corr_alpha (correlation shrink toward zero) → use 0–1 only.
-
-0 = keep correlations; 1 = wipe structure (identity).
-
-Do not use negative (that would “anti-shrink” and can break the correlation matrix).
-
-Practical range: 0.00, 0.10, 0.25, 0.50, 0.80 (your tiers).
