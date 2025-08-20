@@ -1,0 +1,26 @@
+Package: likertSim
+Title: Likert Data Simulator with Polychoric Option and Stress Knobs
+Version: 0.1.0
+Authors@R:
+    person("Tauseef", "Mahmood", email = "you@example.com", role = c("aut","cre"))
+Description: Simulate Likert-scale datasets using ordinal (threshold) and mean–SD modes,
+    fit polychoric correlations with Pearson fallback, and stress dispersion, bias,
+    and inter-item correlations. First column is an ID; others are Likert items.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 3.5)
+Imports:
+    stats,
+    methods
+Suggests:
+    psych,
+    MASS,
+    Matrix,
+    dplyr,
+    tidyr,
+    testthat (>= 3.0.0),
+    pkgdown
+Config/testthat/edition: 3
