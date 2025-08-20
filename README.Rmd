@@ -24,3 +24,46 @@ out <- simulate_and_compare(
 
 head(out$comparison)
 out$warnings
+
+
+| Tier         | noise\_factor | bias | corr\_alpha | What it means in practice (5-point scale)                                                                               |
+| ------------ | ------------- | ---- | ----------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Baseline** | 1.00          | 0.00 | 0.00        | Raters use scale as in real data; no change.                                                                            |
+| **Mild**     | 1.05          | 0.10 | 0.10        | Slightly more scattered (SD +5%), \~⅒ of a category higher; inter-item r shrinks 10%.                                   |
+| **Moderate** | 1.15          | 0.25 | 0.25        | SD +15% (variance +32%), about ¼ category leniency; correlations ×0.75 (α/ICC start to drop).                           |
+| **Strong**   | 1.30          | 0.40 | 0.50        | SD +30% (variance +69%), almost ½ category shift up; correlations halved (α/ICC fall substantially).                    |
+| **Extreme**  | 1.60          | 0.60 | 0.80        | Very noisy (SD +60%, variance +156%), \~⅗ category bias; correlations cut to 20% of original (structure near collapse). |
+
+
+| Tier         | noise\_factor | bias | corr\_alpha | What it means in practice (7-point scale)                                                                                 |
+| ------------ | ------------- | ---- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Baseline** | 1.00          | 0.00 | 0.00        | Pure mimic of real raters.                                                                                                |
+| **Mild**     | 1.05          | 0.10 | 0.10        | SD +5%; \~⅒ category shift (hardly noticeable); correlations ×0.9.                                                        |
+| **Moderate** | 1.15          | 0.25 | 0.25        | SD +15% (variance +32%); about ¼ category bias (detectable leniency/severity); correlations ×0.75.                        |
+| **Strong**   | 1.30          | 0.40 | 0.50        | SD +30% (variance +69%); \~0.4 category shift (between “Agree” and “Strongly Agree”); correlations halved.                |
+| **Extreme**  | 1.60          | 0.60 | 0.80        | SD +60% (variance +156%); \~0.6 category shift; inter-item correlations reduced to 20% (construct reliability collapses). |
+
+
+noise_factor (scales SD) → must be ≥ 0.
+
+Typical use: ≥ 1.0 to add noise (1.05, 1.15, 1.30…).
+
+You may use 0.8–1.0 to model less noisy/very consistent raters.
+
+Never negative (a negative SD multiplier is meaningless).
+
+bias (in “category units”) → can be positive or negative.
+
++ bias = lenient (pushes scores up).
+
+– bias = severe (pushes scores down).
+
+Safe range: ≈ −0.6 to +0.6 (bigger shifts risk floor/ceiling on 5–7 pt scales).
+
+corr_alpha (correlation shrink toward zero) → use 0–1 only.
+
+0 = keep correlations; 1 = wipe structure (identity).
+
+Do not use negative (that would “anti-shrink” and can break the correlation matrix).
+
+Practical range: 0.00, 0.10, 0.25, 0.50, 0.80 (your tiers).
