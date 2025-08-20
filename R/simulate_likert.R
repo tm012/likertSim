@@ -203,6 +203,36 @@ mean_sd_by_item <- function(df){
 }
 
 # ---------- Wrapper ----------
+#' Simulate and Compare Likert Data
+#'
+#' Fits a Likert simulation model from real data, generates simulated datasets
+#' under baseline and stressed conditions, and compares means and standard deviations.
+#'
+#' @param df_real Data frame with first column `coder_id` and remaining columns Likert items.
+#' @param K_min,K_max Integer bounds of the Likert scale.
+#' @param N_sim Number of simulated raters (rows).
+#' @param noise_factor Scale factor for variability (>1 = more spread).
+#' @param bias Global shift (+ lenient, - severe).
+#' @param corr_alpha Blend toward independence (0 = keep real R, 1 = diagonal).
+#' @param mode Either `"threshold"` (ordinal) or `"meansd"`.
+#' @param auto_small_switch Switch to mean–SD mode if N < cutoff.
+#' @param small_n_cutoff Cutoff for auto switch.
+#' @param threshold_strategy `"empirical"` (match real marginals) or `"equal"`.
+#'
+#' @return A list with components:
+#' \describe{
+#'   \item{model}{Fitted model object (thresholds, correlations, means, sds).}
+#'   \item{sim_default}{Simulated dataset with no stress.}
+#'   \item{sim_stress}{Simulated dataset with stress knobs.}
+#'   \item{comparison}{Summary of means and SDs across datasets.}
+#'   \item{warnings}{Any saturation warnings.}
+#' }
+#'
+#' @examples
+#' df <- data.frame(coder_id=1:20, A=sample(1:5,20,TRUE), B=sample(1:5,20,TRUE))
+#' out <- simulate_and_compare(df, K_min=1, K_max=5, N_sim=100)
+#' head(out$comparison)
+#'
 #' @export
 simulate_and_compare <- function(df_real,
                                  K_min,                     # REQUIRED

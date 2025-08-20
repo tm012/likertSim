@@ -1,9 +1,12 @@
 Package: likertSim
 Title: Likert Simulation with Polychoric Option and Stress Knobs
 Version: 0.1.0
-Authors@R: person("TM", "Tauseef", email = "tauseefim@yahoo.com", role = c("aut", "cre"))
+Authors@R: 
+    person("TM", "Tauseef Mamun", email = "tauseefim@yahoo.com", role = c("aut", "cre"))
 Description: Simulates Likert ratings using empirical thresholds, polychoric
-    structure (with Pearson fallback), and stress knobs for noise, bias, and correlation weakening.
+    correlation structure (with Pearson fallback), and stress knobs for noise,
+    bias, and correlation weakening. Includes a wrapper function
+    simulate_and_compare() for direct use.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
