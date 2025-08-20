@@ -67,6 +67,7 @@ make_pd <- function(R){
 
 # ---------- Fit model from real data ----------
 # FIRST column is ID; we will NOT infer or move it. We drop zero-variance items after coercion.
+@export
 fit_likert_model <- function(df, K_min, K_max,
                              threshold_strategy = c("empirical","equal")){
   threshold_strategy <- match.arg(threshold_strategy)
@@ -128,6 +129,7 @@ fit_likert_model <- function(df, K_min, K_max,
 
 # ---------- Simulate rows (with stress controls) ----------
 # mode: "threshold" (ordinal) or "meansd" (continuous → round/clamp)
+@export
 simulate_likert <- function(model, N_sim,
                             id_prefix    = "sim",
                             noise_factor = 1.0,
@@ -201,6 +203,7 @@ mean_sd_by_item <- function(df){
 }
 
 # ---------- Wrapper ----------
+@export
 simulate_and_compare <- function(df_real,
                                  K_min,                     # REQUIRED
                                  K_max,                     # REQUIRED
