@@ -1,4 +1,4 @@
-# install
+
 # install.packages("devtools")
 devtools::install_github("tm012/likertSim")
 
