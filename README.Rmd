@@ -1,135 +1,113 @@
-Here’s a cleaned, README-ready version—short, scannable, and non-redundant.
+# likertSim — Small-N Synthetic Likert Data
 
----
+This script creates synthetic Likert-response datasets from a real low-N dataset.
 
-# likertSim — Quick Start
+Use this for sensitivity analysis, workflow testing, and checking whether a scoring or analysis pipeline behaves as expected. Do **not** use synthetic rows as if they were additional real participants. The real sample size remains the observed sample size.
 
-## Install
+## Input format
+
+The first column must be the participant or coder ID. All remaining columns must be Likert items.
 
 ```r
-install.packages("devtools")           # if needed
-devtools::install_github("tm012/likertSim")
-library(likertSim)
+# First column = participant/coder ID
+# Remaining columns = Likert items
+head(df_real)
 ```
 
-## Minimal example
+Example:
 
 ```r
-# First column = coder_id; remaining columns = Likert items
-set.seed(1)
 df_real <- data.frame(
-  coder_id = paste0("r", 1:50),
-  A = sample(1:5, 50, TRUE),
-  B = sample(1:5, 50, TRUE),
-  C = sample(1:5, 50, TRUE)
+  coder_id = paste0("r", 1:8),
+  clarity = c(4, 5, 4, 3, 4, 5, 4, 4),
+  usefulness = c(3, 4, 4, 3, 5, 4, 4, 3),
+  safety = c(5, 5, 4, 4, 5, 5, 4, 5)
 )
-
-out <- simulate_and_compare(
-  df_real,
-  K_min = 1, K_max = 5,
-  N_sim = 200,
-  noise_factor = 1.20,  # +20% SD
-  bias         = 0.20,  # ~+0.2 category (lenient)
-  corr_alpha   = 0.30,  # 30% correlation shrink
-  mode         = "threshold"
-)
-
-head(out$comparison)
-out$warnings
 ```
 
----
+## Recommended small-N use
 
-## Stress knobs (tiers)
+For small participant counts, use the convenience wrapper:
 
-Use these presets to dial realism or “stress test” reliability.
+```r
+source("simulate_likert_updated.R")
 
-| Tier     | `noise_factor` | `bias` | `corr_alpha` | Rule of thumb                                        |
-| -------- | -------------: | -----: | -----------: | ---------------------------------------------------- |
-| Baseline |           1.00 |   0.00 |         0.00 | Mimics real raters.                                  |
-| Mild     |           1.05 |   0.10 |         0.10 | SD +5%; \~+0.1 category; slight structure shrink.    |
-| Moderate |           1.15 |   0.25 |         0.25 | SD +15%; \~+¼ category; noticeable reliability drop. |
-| Strong   |           1.30 |   0.40 |         0.50 | SD +30%; \~+0.4 category; correlations halved.       |
-| Extreme  |           1.60 |   0.60 |         0.80 | SD +60%; \~+0.6 category; structure near collapse.   |
+out <- make_synthetic_smallN(
+  df_real = df_real,
+  K_min = 1,
+  K_max = 5,
+  target_N = 100,
+  corr_alpha = 0.5,
+  noise_factor = 1.15,
+  bias = 0
+)
 
+synthetic_base <- out$synthetic_base
+synthetic_stress <- out$synthetic_stress
+comparison <- out$comparison
+warnings <- out$warnings
 
+write.csv(synthetic_stress, "synthetic_likert_data.csv", row.names = FALSE)
+write.csv(comparison, "synthetic_comparison.csv", row.names = FALSE)
+```
 
----
+## Recommended settings for low N
 
-## Key arguments (quick reference)
+| Argument | Recommended value | Why |
+|---|---:|---|
+| `mode` | `"meansd"` | More stable than ordinal-threshold simulation when N is small. |
+| `corr_alpha` | `0.5` | Shrinks unstable observed correlations toward independence. |
+| `noise_factor` | `1.10` to `1.25` | Adds modest uncertainty around observed responses. |
+| `bias` | `0` | Keeps the center close to the observed data. |
+| `target_N` | `100` or `1000` | Enough rows for sensitivity testing or pipeline testing. |
 
+## What the outputs mean
 
+`synthetic_base` creates a synthetic dataset centered on the observed item means and standard deviations.
 
-df_real (data.frame / matrix, required)
-Your real Likert dataset. First column should be an ID; remaining columns are items. Used to learn item means/SDs, thresholds, and inter-item correlations.
+`synthetic_stress` creates a noisier synthetic dataset using the requested stress settings.
 
-K_min (integer, required)
-Lowest Likert category in your scale (usually 1).
+`comparison` compares observed, synthetic base, and synthetic stress item means and standard deviations.
 
-K_max (integer, required)
-Highest Likert category (e.g., 5 or 7). All simulated scores are rounded and clipped to [K_min, K_max].
+`warnings` flags items where synthetic values are almost all at the ceiling or floor.
 
-N_sim (integer, default = nrow(df_real))
-Number of simulated raters/rows to generate per condition (default & stress).
+## Stress knobs
 
-noise_factor (numeric ≥ 0, default = 1.0)
-Multiplies item SDs before discretizing.
+| Tier | `noise_factor` | `bias` | `corr_alpha` | Use case |
+|---|---:|---:|---:|---|
+| Baseline | 1.00 | 0.00 | 0.50 | Small-N synthetic baseline with shrinkage. |
+| Mild | 1.10 | 0.00 | 0.50 | Slightly more uncertainty. |
+| Moderate | 1.15 | 0.00 | 0.50 | Good default for sensitivity checks. |
+| Strong | 1.30 | 0.20 | 0.70 | Stress test under noisier ratings. |
+| Extreme | 1.60 | 0.40 | 0.90 | Very conservative stress test. |
 
-1.0 = same dispersion as real data
+## Important reporting language
 
->1.0 = noisier raters (e.g., 1.15 → SD +15%)
+Recommended wording:
 
-0.8–1.0 = very consistent raters
+> Because the observed participant sample was small, we generated synthetic Likert-response datasets based on the observed item means, standard deviations, and a shrunk inter-item correlation structure. These synthetic datasets were used only for sensitivity analyses and workflow validation. All primary results are reported using the observed participant data.
 
-bias (numeric, default = 0.0)
-Constant shift in category units applied to latent scores before rounding.
+Avoid wording like this:
 
-+ = lenient (pushes up), − = severe (pushes down)
+> We increased the sample size using synthetic participants.
 
-Typical safe range: about −0.6 … +0.6 on 5–7 point scales
+## Main function
 
-corr_alpha (numeric in [0,1], default = 0.0)
-Correlation “shrink” toward independence. Implemented as
-R' = (1 − corr_alpha)·R + corr_alpha·I.
+```r
+out <- simulate_and_compare(
+  df_real = df_real,
+  K_min = 1,
+  K_max = 5,
+  N_sim = 100,
+  mode = "meansd",
+  corr_alpha = 0.5,
+  noise_factor = 1.15,
+  bias = 0
+)
+```
 
-0.0 = keep real inter-item structure
+## Notes
 
-0.25 ≈ reduce off-diagonals by 25%
+The updated script keeps constant items in the output instead of dropping them. This is helpful when downstream code expects the same item columns as the original dataset.
 
-1.0 = wipe structure (identity)
-
-seed_default (integer, default = 123)
-RNG seed for the baseline simulation (reproducibility).
-
-seed_stress (integer, default = 456)
-RNG seed for the stress simulation.
-
-id_prefix_default (string, default = "sim")
-Prefix for generated IDs in the baseline dataset (e.g., sim_0001).
-
-id_prefix_stress (string, default = "stress")
-Prefix for generated IDs in the stress dataset.
-
-mode (string, one of c("threshold","meansd"))
-Chooses the simulation engine:
-
-"threshold": fit polychoric (or Pearson fallback) correlation; derive item thresholds from df_real; simulate latent multivariate normals; cut by thresholds to Likert. Best when you have moderate N and ordinal items.
-
-"meansd": simpler Gaussian + rounding using item means/SDs and a (shrunken) Pearson R. Useful for very small N or when thresholds are unstable.
-
-auto_small_switch (logical, default = TRUE)
-If TRUE, automatically switch mode to "meansd" when sample size is small (see small_n_cutoff) to avoid unreliable threshold/ polychoric estimates.
-
-small_n_cutoff (integer, default = 15)
-Threshold for “small N” logic. If nrow(df_real) < small_n_cutoff and auto_small_switch = TRUE, use "meansd" internally.
-
-threshold_strategy (string, one of c("empirical","equal"))
-How to set category cut-points when mode = "threshold":
-
-"empirical": use observed cumulative proportions per item (adds a small smoothing) → mirrors real response distributions.
-
-"equal": use equally spaced thresholds on the latent normal → idealized balanced categories.
-
-
-
-
+The script also handles character or factor Likert values, missing values, one-item datasets, and small-N correlation problems more safely than the original version.
